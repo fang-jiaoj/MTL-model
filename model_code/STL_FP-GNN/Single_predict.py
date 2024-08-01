@@ -1,11 +1,24 @@
 import csv
 import numpy as np
 import os
+import random
+import torch
 from fpgnn.tool import set_predict_argument, get_scaler, load_args, load_data, load_model,get_task_name
 from fpgnn.train import predict
 from fpgnn.data import MoleDataSet
 from FP_GNN_Metrics import Metric
 import pandas as pd
+
+def set_random_seed(args):
+    seed = args.seed
+    random.seed(seed)
+    np.random.seed(seed)   
+    torch.manual_seed(seed)
+    #os.environ['PYTHONHASHSEED'] = str(seed)  ##设置 Python 散列的种子
+    if args.cuda:  ##设置了 CUDA 的随机数生成器的种子
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+
 
 def predicting(args):
     """这段代码主要用于将训练好的模型应用于新的数据集以进行预测，并将预测结果保存到输出文件中，
@@ -101,8 +114,9 @@ if __name__=='__main__':
     test_mcc_list = []
     for seed in range(10):
         args.seed = seed
+        set_random_seed(args)
         args.model_path = os.path.join(model_path,f'{args.seed}_model.pt')
-        args.predict_path = os.path.join(data_path,f'{args.seed}_2D6_test.csv')
+        args.predict_path = os.path.join(data_path,f'{args.seed}_3A4_test.csv')
         test_auc, test_acc, test_bacc, test_sp, test_recall, test_f1, test_precision, test_mcc = predicting(args)
         test_auc_list.append(test_auc)
         test_acc_list.append(test_acc)
@@ -123,6 +137,6 @@ if __name__=='__main__':
     mcc_df = pd.DataFrame(test_mcc_list, columns=['MCC'])
     total = pd.concat([auc_df,acc_df,bacc_df,sp_df,recall_df,f1_df,pre_df,mcc_df],axis=1)
 
-    total.to_csv(os.path.join(model_path,"Single_2D6_10_seeds_result_again.csv"))
+    total.to_csv(os.path.join(model_path,"random_Single_3A4_10_seeds_result.csv"))
 
     
